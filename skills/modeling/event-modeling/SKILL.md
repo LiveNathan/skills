@@ -624,6 +624,11 @@ a content-reference stub (e.g. `<<ccr:...,string,5.2KB>>`) rather than the full 
 not the content — never reason about a slice from a stub, and never treat a stub as "no details".
 Fetch the complete text with `get_element(workspace_id, chapter_id, element_id)` before using it.
 
+Even when the spool has zero stubs, the **inline** rendering of a huge `get_chapter` can garble or
+interleave adjacent elements' text (one element's details or comments rendered inside another's).
+The spooled file is the only trustworthy copy: verify `grep -c '<<ccr:'` is 0 *and* read the spool
+before writing anything back — never compose board writes from the inline rendering alone.
+
 `get_chapter` has no metadata-only mode: on a mature chapter it returns every slice's full
 Given/When/Then and can run to tens of thousands of tokens. Its `slice_ids` filter narrows
 *elements* only — lanes and slices always come back whole, and an id that matches nothing does not
