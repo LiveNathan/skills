@@ -345,6 +345,27 @@ it is not. When you resolve an open question, rewrite its description to state t
 rejected alternatives — do not delete it. The history is the point, and the next person to have
 the same idea needs to find out why it was rejected.
 
+## Reusing Elements Across Chapters (Sync)
+
+The same command, event, or information often appears in several chapters — the chapter where it
+originates, and chapters that consume it (automations, read models, other journeys). Do not re-type
+it. prooph board treats elements with the **same name and same context** as one element: every copy
+is synchronized, and editing one updates all of them.
+
+Rules:
+
+- An element's `context` defaults to its chapter's context at creation time. The chapter context
+  is a default, not a cage — elements can carry a different context than their chapter.
+- A context is a **bounded context** — the part of the system that owns the state. Never an actor
+  name (`Human`, `Agent`) and never a UI area or feature nickname.
+- To reuse an element that already exists in another chapter, **copy it** — never re-create it
+  from scratch. Re-typed duplicates drift silently.
+- A copy joins its **source's context** (the context owning the underlying stream), even when the
+  chapter it lands in defaults to a different context.
+- If two same-named elements are NOT synchronized, check their contexts first — differing contexts
+  is the cause. Aligning the contexts links them; no re-copy needed.
+- Context names are matched by exact string: `Accounts` and `accounts` are two different contexts.
+
 ---
 
 # Anti-Patterns (DO NOT MODEL)
@@ -613,6 +634,7 @@ In Critic Mode — and as step 8 of the Modeling Order — verify every item bef
 - [ ] Commands are imperative business intent; events are past-tense business facts
 - [ ] No data-loading commands, UI-interaction events, or technical events (see Anti-Patterns)
 - [ ] Slice transitions match a Valid flow (see Flow & Causality)
+- [ ] Elements reused across chapters share the exact name AND context of their source — same name + same context = one synchronized element
 - [ ] Assumptions are surfaced as Hotspots or questions, not buried in descriptions
 
 ---
