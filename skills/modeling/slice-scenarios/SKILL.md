@@ -659,133 +659,20 @@ Use when: Documenting how a collection or table changes through a scenario
 
 ## Scenario Types
 
-### 1. Happy Path
+Six types worth covering, each already shown in full above — read the example rather than a second
+copy of it:
 
-The normal, expected flow:
+| Type | The question it answers | Full example above |
+|---|---|---|
+| Happy path | Does the normal flow work? | Example 1 |
+| Business rule validation | What happens when a domain constraint is violated? | Example 2 |
+| Authorization / access control | Who is allowed to see or do this? | Example 3 |
+| Error handling | What happens when the operation is invalid? | Example 6 |
+| Idempotent operation | Is a repeat safe? | Example 5 |
+| State projection | What does the reader actually see? | Example 7 |
 
-````
-```markdown
-### Scenario: Start Work Day Time Tracking
-
-As an employee, I want to clock in at the beginning of the work day
-to start a new time tracking session.
-
-#### Given
-A new work day: `2026-03-05`
-
-#### When
-[Command]
-
-#### Then
-[Success Event]
-
-````
-
----
-
-### 2. Business Rule Validation
-
-Enforcing domain constraints:
-
-````
-```markdown
-### Scenario: Time Tracking already started
-
-As an employee, I cannot have more than one active time tracking sessions.
-
-#### Given
-[Active session exists]
-
-#### When
-[Duplicate clock in attempt]
-
-#### Then
-[Hotspot - already running]
-
-````
-
----
-
-### 3. Authorization/Access Control
-
-Permission checks:
-
-````
-```markdown
-### Scenario: Cannot view other time tracking
-
-As an employee, I'm not allowed to view other's time tracking
-
-#### Given
-`Employee: Anna`
-[Bob's time tracking event]
-
-#### Then
-[Hotspot - Access Denied]
-
-````
-
----
-
-### 4. Error Handling
-
-Invalid operations:
-
-````
-```markdown
-### Scenario: No active time tracking session
-
-#### Given
-[Session already ended]
-
-#### When
-[Clock out for break attempt]
-
-#### Then
-[Hotspot - Failed with reason]
-
-````
-
----
-
-### 5. Idempotent Operations
-
-Safe retry behavior:
-
-````
-```markdown
-### Scenario: Already clocked out for break
-
-#### Given
-[Already on break]
-
-#### When
-[Clock out for break again]
-
-#### Then
-silently ignore clock out for break
-
-````
-
----
-
-### 6. State Projection
-
-Read model behavior:
-
-````
-```markdown
-### Scenario: View active Time Tracking
-
-As an employee, I want to view my active time tracking session.
-
-#### Given
-[Multiple events showing state]
-
-#### Then
-[Information element with projected state]
-
-````
+A slice is not covered until it has success **and** failure; a command with no stated failure mode
+is under-specified, not infallible.
 
 ---
 
@@ -842,6 +729,11 @@ locationId: string|format:uuid
 ```
 
 ````
+
+**Concrete is not enough — it has to be true.** When the Given cites a fixture, a real
+schedule, or a live payload, extract the row from the file rather than composing one that looks
+right. An invented example that contradicts the fixture is worse than no example: the next reader
+checks it, finds it false, and stops trusting the rest of the slice.
 
 ---
 

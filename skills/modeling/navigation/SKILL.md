@@ -72,7 +72,7 @@ Extract:
 
 Use MCP tool:
 
-- `get_chapter_details(workspaceId, chapterId)`
+- `get_chapter(workspace_id, chapter_id)`
 
 ---
 

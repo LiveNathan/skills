@@ -360,11 +360,18 @@ Rules:
   name (`Human`, `Agent`) and never a UI area or feature nickname.
 - To reuse an element that already exists in another chapter, **copy it** — never re-create it
   from scratch. Re-typed duplicates drift silently.
-- A copy joins its **source's context** (the context owning the underlying stream), even when the
-  chapter it lands in defaults to a different context.
+- **A copy takes the *target chapter's* context, not its source's** — so copying across contexts
+  mints a different element that will never sync. Pass `context:` explicitly, read the copy back,
+  and if it differs from the source's, remove and re-add it rather than hand-editing. Contexts are
+  matched by exact string (`Accounts` ≠ `accounts`).
+- **Alignment is asynchronous and the merge is asymmetric.** `copy_element` returns a contentless
+  skeleton that fills in a moment later (in the changelog it is an `element-config-changed`, not a
+  details change). Once aligned there is one `details` field and it is the **first-created**
+  placement's: later placements' `details` are silently discarded, while `description` stays
+  per-placement. So keep slice-specific behaviour in the **slice** details — an element holds only
+  what is true everywhere, or the last author's copy is the one that disappears.
 - If two same-named elements are NOT synchronized, check their contexts first — differing contexts
   is the cause. Aligning the contexts links them; no re-copy needed.
-- Context names are matched by exact string: `Accounts` and `accounts` are two different contexts.
 
 ---
 
@@ -543,19 +550,9 @@ Otherwise, model a READ first.
 
 # Domain Language
 
-Commands and events MUST use domain language.
-
-## Button Label Test
-
-UI wording → ❌  
-Business intent → ✅
-
-## Stakeholder Test
-
-Would a business stakeholder say this?
-
-- Commands → intent
-- Events → outcome
+Commands and events MUST use domain language. Two tests: a **button label** is UI wording, not
+business intent; and a business **stakeholder** must be able to say a command as an intention and
+an event as an outcome.
 
 ---
 
@@ -673,6 +670,12 @@ something the model did not know. Amendment has its own failure modes.
 slice was merged, not that the slice is still correct. When a decision changes what a deployed
 slice contracts, the status is now wrong too — say so explicitly rather than leaving a slice that
 reads as done while its behavior is being rewritten.
+
+**Cover the same ground the last amendment did, or say why not.** When your amendment touches
+something an earlier amendment also touched, that amendment's slice list is a ready-made coverage
+checklist — diff against it, and against the board (a chapter's `list_changelog_events` enumerates
+the slices you actually changed). An amendment that quietly covers eight of ten slices reads as
+complete while two of them still assert the superseded contract.
 
 **Expect the board to disagree with itself.** Amendments tend to land where they are cheapest to
 write — a comment on an element, or the element's details — while the slice's own Given/When/Then
