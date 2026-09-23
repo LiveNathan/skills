@@ -90,6 +90,22 @@ Use the `:::element` directive to reference elements in the slice:
 | `hotspot` | Warning/error state |
 | `automation` | Automated process |
 
+### Validating References
+
+A `:::element` reference resolves by **name** against the chapter's elements. Renames, elements
+that were never created, and events that live in another chapter all leave references pointing at
+nothing — and nothing errors when they do. Resolve every reference before calling scenarios done.
+
+Both reads below are cheap and return no markdown: `get_chapter(structure_only: true)`, or
+`search_elements(detail: 'none')`.
+
+| Verdict | Condition | Meaning |
+|---|---|---|
+| 🚨 **FAIL** | The name matches no element anywhere in the chapter | Unambiguous rot — a dangling reference. Fix the name, create the element, or delete the reference. |
+| ⚠️ **WARN** | The name matches an element in a **different slice** of the same chapter | Often legitimate: `Given` state does come from an earlier slice. Confirm it is the element you meant and not a same-named stranger. |
+
+Only the FAIL tier is a hard error; the WARN tier is a prompt to look, not a defect.
+
 ---
 
 ## Complete Examples from a Time Tracking Model
@@ -1031,7 +1047,7 @@ to pause my time tracking.
 |--------------|-------|---------|
 | **Slice Scenarios** | Local to slice | Document behavior for this process step |
 | **Element Description** | Local to element instance | Document what this element does in this context |
-| **Element Details** | Global (all similar elements) | Technical specification (schema, rules, etc.) |
+| **Element Details** | Global (all placements sharing name + type + context) | Technical specification (schema, rules, etc.) |
 
 **Best Practice**: Use slice scenarios to document how elements interact in this specific process step. Keep technical details in element details.
 
@@ -1044,6 +1060,7 @@ Slice scenarios are a powerful tool for documenting business behavior in a forma
 - ✅ Is understandable by business stakeholders
 - ✅ Uses Given-When-Then format for clarity
 - ✅ References elements with `:::element` syntax
+- ✅ Resolves every reference against the chapter's elements (see Validating References)
 - ✅ Shows concrete example data in YAML
 - ✅ Documents both success and failure paths
 - ✅ Captures business rules and constraints

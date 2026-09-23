@@ -349,29 +349,37 @@ the same idea needs to find out why it was rejected.
 
 The same command, event, or information often appears in several chapters — the chapter where it
 originates, and chapters that consume it (automations, read models, other journeys). Do not re-type
-it. prooph board treats elements with the **same name and same context** as one element: every copy
+it. prooph board treats elements with the **same name, type, and context** as one element: every copy
 is synchronized, and editing one updates all of them.
 
 Rules:
 
+- An element is identified by its **name, type, and context**. Two elements sharing all three are
+  one synchronized element across every chapter; a `command` and an `event` of the same name are
+  two different elements.
 - An element's `context` defaults to its chapter's context at creation time. The chapter context
-  is a default, not a cage — elements can carry a different context than their chapter.
+  is a default, not a cage — elements can carry a different context than their chapter. Both are
+  editable after creation: `update_element` accepts `context`, and `update_chapter` re-contexts
+  the chapter and cascades the change to every element in it.
 - A context is a **bounded context** — the part of the system that owns the state. Never an actor
   name (`Human`, `Agent`) and never a UI area or feature nickname.
 - To reuse an element that already exists in another chapter, **copy it** — never re-create it
-  from scratch. Re-typed duplicates drift silently.
-- **A copy takes the *target chapter's* context, not its source's** — so copying across contexts
-  mints a different element that will never sync. Pass `context:` explicitly, read the copy back,
-  and if it differs from the source's, remove and re-add it rather than hand-editing. Contexts are
-  matched by exact string (`Accounts` ≠ `accounts`).
-- **Alignment is asynchronous and the merge is asymmetric.** `copy_element` returns a contentless
-  skeleton that fills in a moment later (in the changelog it is an `element-config-changed`, not a
-  details change). Once aligned there is one `details` field and it is the **first-created**
-  placement's: later placements' `details` are silently discarded, while `description` stays
-  per-placement. So keep slice-specific behaviour in the **slice** details — an element holds only
-  what is true everywhere, or the last author's copy is the one that disappears.
-- If two same-named elements are NOT synchronized, check their contexts first — differing contexts
-  is the cause. Aligning the contexts links them; no re-copy needed.
+  from scratch. Re-typed duplicates drift silently. `copy_element` defaults the copy to the
+  **source element's** context, so a cross-chapter copy lands in the intended bounded context by
+  itself; pass `context:` only when you deliberately want the copy to become a different element.
+  Contexts are matched by exact string (`Accounts` ≠ `accounts`).
+- **Alignment is asynchronous.** `copy_element` returns a contentless skeleton that fills in a
+  moment later (in the changelog it is an `element-config-changed`, not a details change).
+- **`details` is shared; `description` is not.** Once aligned, all placements share one `details`
+  field — writing it on any placement writes it everywhere — and the merge at alignment time
+  keeps the **first-created** placement's value, silently discarding the later copy's. The
+  `description` stays per-placement. So keep slice-specific behaviour in the **slice** details:
+  an element's `details` holds only what is true at every placement, or the last author's copy is
+  the one that disappears.
+- If two same-named elements are NOT synchronized, check their context (and type) first — a
+  differing context is the cause. Repair it by **aligning the context**, not by re-copying:
+  `update_element(context:)` for a single element, or `update_chapter(context:)` when a whole
+  chapter's elements are wrong, since that cascades to all of them.
 
 ---
 
@@ -631,7 +639,7 @@ In Critic Mode — and as step 8 of the Modeling Order — verify every item bef
 - [ ] Commands are imperative business intent; events are past-tense business facts
 - [ ] No data-loading commands, UI-interaction events, or technical events (see Anti-Patterns)
 - [ ] Slice transitions match a Valid flow (see Flow & Causality)
-- [ ] Elements reused across chapters share the exact name AND context of their source — same name + same context = one synchronized element
+- [ ] Elements reused across chapters share the exact name, type, AND context of their source — same name + type + context = one synchronized element
 - [ ] Assumptions are surfaced as Hotspots or questions, not buried in descriptions
 
 ---
@@ -648,11 +656,21 @@ interleave adjacent elements' text (one element's details or comments rendered i
 The spooled file is the only trustworthy copy: verify `grep -c '<<ccr:'` is 0 *and* read the spool
 before writing anything back — never compose board writes from the inline rendering alone.
 
-`get_chapter` has no metadata-only mode: on a mature chapter it returns every slice's full
-Given/When/Then and can run to tens of thousands of tokens. Its `slice_ids` filter narrows
-*elements* only — lanes and slices always come back whole, and an id that matches nothing does not
-suppress them. To learn a chapter's structure, prefer `search_elements` or a single `get_chapter`
-whose cost you have accepted; do not call it speculatively hoping to get a cheap summary.
+A full `get_chapter` is expensive: on a mature chapter it returns every slice's full
+Given/When/Then and can run to tens of thousands of tokens. Three cheap reads avoid that:
+
+- `get_chapter(structure_only: true)` strips lane and slice details, leaving the structure (lanes,
+  slices, element placements, ids, names). Use it whenever you need the shape of a chapter rather
+  than its prose.
+- `slice_ids` narrows the *details* to the slices you name: non-matching slices still come back
+  (lanes and slices are always whole, and an id that matches nothing does not suppress them) but
+  without their `details`, so a single-slice query on a large chapter stays small.
+- `search_elements(detail:)` is the element-level equivalent — `'none'` (id, type, name, laneId,
+  sliceId, chapterId), `'summary'` (adds context, index, chapterName), or `'full'` (the default,
+  including description and details). Use `'none'` or `'summary'` for inventory and reference
+  checks.
+
+Do not call a full `get_chapter` speculatively hoping for a cheap summary.
 
 The live board is always the source of truth. If your setup keeps a local export or snapshot of the
 board, treat it strictly as an offline fallback: it lags the live board, so refresh it at the moment
