@@ -360,7 +360,7 @@ Rules:
 - An element's `context` defaults to its chapter's context at creation time. The chapter context
   is a default, not a cage — elements can carry a different context than their chapter. Both are
   editable after creation: `update_element` accepts `context`, and `update_chapter` re-contexts
-  the chapter and cascades the change to every element in it.
+  the chapter, which cascades to the elements that shared the old chapter context.
 - A context is a **bounded context** — the part of the system that owns the state. Never an actor
   name (`Human`, `Agent`) and never a UI area or feature nickname.
 - To reuse an element that already exists in another chapter, **copy it** — never re-create it
@@ -370,16 +370,17 @@ Rules:
   Contexts are matched by exact string (`Accounts` ≠ `accounts`).
 - **Alignment is asynchronous.** `copy_element` returns a contentless skeleton that fills in a
   moment later (in the changelog it is an `element-config-changed`, not a details change).
-- **`details` is shared; `description` is not.** Once aligned, all placements share one `details`
-  field — writing it on any placement writes it everywhere — and the merge at alignment time
-  keeps the **first-created** placement's value, silently discarding the later copy's. The
-  `description` stays per-placement. So keep slice-specific behaviour in the **slice** details:
-  an element's `details` holds only what is true at every placement, or the last author's copy is
-  the one that disappears.
+- **`details` is shared; `description` is not.** Elements sharing name + type + context synchronise
+  their `details` field — writing it on any placement writes it everywhere — while `description` is
+  per-placement and never shared. A copy **inherits the shared `details` of the matching element
+  already in that context**, so the pre-existing placement's text is what survives; do not rely on
+  a `details:` value passed to the copy. Keep slice-specific behaviour in the **slice** details:
+  an element's `details` holds only what is true at every placement.
 - If two same-named elements are NOT synchronized, check their context (and type) first — a
   differing context is the cause. Repair it by **aligning the context**, not by re-copying:
   `update_element(context:)` for a single element, or `update_chapter(context:)` when a whole
-  chapter's elements are wrong, since that cascades to all of them.
+  chapter is wrong — it cascades to every element sharing the old chapter context, and leaves an
+  element that deliberately carries a different context alone.
 
 ---
 
