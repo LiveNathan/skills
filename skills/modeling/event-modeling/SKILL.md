@@ -345,6 +345,43 @@ it is not. When you resolve an open question, rewrite its description to state t
 rejected alternatives — do not delete it. The history is the point, and the next person to have
 the same idea needs to find out why it was rejected.
 
+## Reusing Elements Across Chapters (Sync)
+
+The same command, event, or information often appears in several chapters — the chapter where it
+originates, and chapters that consume it (automations, read models, other journeys). Do not re-type
+it. prooph board treats elements with the **same name, type, and context** as one element: every copy
+is synchronized, and editing one updates all of them.
+
+Rules:
+
+- An element is identified by its **name, type, and context**. Two elements sharing all three are
+  one synchronized element across every chapter; a `command` and an `event` of the same name are
+  two different elements.
+- An element's `context` defaults to its chapter's context at creation time. The chapter context
+  is a default, not a cage — elements can carry a different context than their chapter. Both are
+  editable after creation: `update_element` accepts `context`, and `update_chapter` re-contexts
+  the chapter, which cascades to the elements that shared the old chapter context.
+- A context is a **bounded context** — the part of the system that owns the state. Never an actor
+  name (`Human`, `Agent`) and never a UI area or feature nickname.
+- To reuse an element that already exists in another chapter, **copy it** — never re-create it
+  from scratch. Re-typed duplicates drift silently. `copy_element` defaults the copy to the
+  **source element's** context, so a cross-chapter copy lands in the intended bounded context by
+  itself; pass `context:` only when you deliberately want the copy to become a different element.
+  Contexts are matched by exact string (`Accounts` ≠ `accounts`).
+- **Alignment is asynchronous.** `copy_element` returns a contentless skeleton that fills in a
+  moment later (in the changelog it is an `element-config-changed`, not a details change).
+- **`details` is shared; `description` is not.** Elements sharing name + type + context synchronise
+  their `details` field — writing it on any placement writes it everywhere — while `description` is
+  per-placement and never shared. A copy **inherits the shared `details` of the matching element
+  already in that context**, so the pre-existing placement's text is what survives; do not rely on
+  a `details:` value passed to the copy. Keep slice-specific behaviour in the **slice** details:
+  an element's `details` holds only what is true at every placement.
+- If two same-named elements are NOT synchronized, check their context (and type) first — a
+  differing context is the cause. Repair it by **aligning the context**, not by re-copying:
+  `update_element(context:)` for a single element, or `update_chapter(context:)` when a whole
+  chapter is wrong — it cascades to every element sharing the old chapter context, and leaves an
+  element that deliberately carries a different context alone.
+
 ---
 
 # Anti-Patterns (DO NOT MODEL)
@@ -522,19 +559,9 @@ Otherwise, model a READ first.
 
 # Domain Language
 
-Commands and events MUST use domain language.
-
-## Button Label Test
-
-UI wording → ❌  
-Business intent → ✅
-
-## Stakeholder Test
-
-Would a business stakeholder say this?
-
-- Commands → intent
-- Events → outcome
+Commands and events MUST use domain language. Two tests: a **button label** is UI wording, not
+business intent; and a business **stakeholder** must be able to say a command as an intention and
+an event as an outcome.
 
 ---
 
@@ -613,6 +640,7 @@ In Critic Mode — and as step 8 of the Modeling Order — verify every item bef
 - [ ] Commands are imperative business intent; events are past-tense business facts
 - [ ] No data-loading commands, UI-interaction events, or technical events (see Anti-Patterns)
 - [ ] Slice transitions match a Valid flow (see Flow & Causality)
+- [ ] Elements reused across chapters share the exact name, type, AND context of their source — same name + type + context = one synchronized element
 - [ ] Assumptions are surfaced as Hotspots or questions, not buried in descriptions
 
 ---
@@ -624,11 +652,26 @@ a content-reference stub (e.g. `<<ccr:...,string,5.2KB>>`) rather than the full 
 not the content — never reason about a slice from a stub, and never treat a stub as "no details".
 Fetch the complete text with `get_element(workspace_id, chapter_id, element_id)` before using it.
 
-`get_chapter` has no metadata-only mode: on a mature chapter it returns every slice's full
-Given/When/Then and can run to tens of thousands of tokens. Its `slice_ids` filter narrows
-*elements* only — lanes and slices always come back whole, and an id that matches nothing does not
-suppress them. To learn a chapter's structure, prefer `search_elements` or a single `get_chapter`
-whose cost you have accepted; do not call it speculatively hoping to get a cheap summary.
+Even when the spool has zero stubs, the **inline** rendering of a huge `get_chapter` can garble or
+interleave adjacent elements' text (one element's details or comments rendered inside another's).
+The spooled file is the only trustworthy copy: verify `grep -c '<<ccr:'` is 0 *and* read the spool
+before writing anything back — never compose board writes from the inline rendering alone.
+
+A full `get_chapter` is expensive: on a mature chapter it returns every slice's full
+Given/When/Then and can run to tens of thousands of tokens. Three cheap reads avoid that:
+
+- `get_chapter(structure_only: true)` strips lane and slice details, leaving the structure (lanes,
+  slices, element placements, ids, names). Use it whenever you need the shape of a chapter rather
+  than its prose.
+- `slice_ids` narrows the *details* to the slices you name: non-matching slices still come back
+  (lanes and slices are always whole, and an id that matches nothing does not suppress them) but
+  without their `details`, so a single-slice query on a large chapter stays small.
+- `search_elements(detail:)` is the element-level equivalent — `'none'` (id, type, name, laneId,
+  sliceId, chapterId), `'summary'` (adds context, index, chapterName), or `'full'` (the default,
+  including description and details). Use `'none'` or `'summary'` for inventory and reference
+  checks.
+
+Do not call a full `get_chapter` speculatively hoping for a cheap summary.
 
 The live board is always the source of truth. If your setup keeps a local export or snapshot of the
 board, treat it strictly as an offline fallback: it lags the live board, so refresh it at the moment
@@ -646,6 +689,12 @@ something the model did not know. Amendment has its own failure modes.
 slice was merged, not that the slice is still correct. When a decision changes what a deployed
 slice contracts, the status is now wrong too — say so explicitly rather than leaving a slice that
 reads as done while its behavior is being rewritten.
+
+**Cover the same ground the last amendment did, or say why not.** When your amendment touches
+something an earlier amendment also touched, that amendment's slice list is a ready-made coverage
+checklist — diff against it, and against the board (a chapter's `list_changelog_events` enumerates
+the slices you actually changed). An amendment that quietly covers eight of ten slices reads as
+complete while two of them still assert the superseded contract.
 
 **Expect the board to disagree with itself.** Amendments tend to land where they are cheapest to
 write — a comment on an element, or the element's details — while the slice's own Given/When/Then

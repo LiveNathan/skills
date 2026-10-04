@@ -1,5 +1,23 @@
 # Changelog
 
+## 2026-09-23
+
+### Updated Skills
+
+#### Skill: Event Modeling v1.7.0
+
+**Element sync's inputs changed under us: `context` is now editable, and `copy_element` inherits its source's context.** The skill's repair path for unsynchronized elements was "remove and re-add, because a copy takes the *target* chapter's context" — true of the old server, wrong now. `copy_element` defaults the copy to the **source element's** context, and a wrong context is fixed in place with `update_element(context:)` or `update_chapter(context:)`, the latter cascading to the elements that shared the old chapter context (an element deliberately carrying another context is left alone). The Sync section is rewritten around that, and the identity key now includes `type`: name + type + context is what makes two elements one.
+
+**`details` shared, `description` per-placement — stated as the model, not the symptom.** The old text described "the merge is asymmetric, only the first placement's details survived" as an observed oddity. The server documents it: elements sharing name + type + context synchronise their `details` field, a copy inherits the shared details of the matching element already in that context, and `description` is never shared. Same practical rule, but now the reader knows why.
+
+**`get_chapter` does have a metadata-only mode.** The previous entry asserted it had none. `structure_only: true` strips lane and slice details, and `slice_ids` now strips the `details` of non-matching slices too — so the "tens of thousands of tokens" warning was overstated for filtered reads. Added `search_elements(detail: 'none' | 'summary' | 'full')` as the element-level equivalent.
+
+**Verified against the server, not the message.** Every signature above was read off the live `tools/list` (prooph-board-mcp 1.0.0, 2026-09-23), which corrected two things the feedback text left loose: the chapter cascade reaches the elements sharing the *old chapter context* (not literally all of them), and a copy inherits the *matching element's* details rather than "the first-created placement winning a merge".
+
+#### Skill: Slice Scenarios v1.1.0
+
+**Reference validation.** The skill documents `:::element` syntax but had no check that a reference resolves. Adds the two-tier rule that caught real defects on a production board: FAIL when a name matches no element anywhere in the chapter (a dangling reference), WARN when it matches one in a different slice (legitimate for `Given`, worth confirming). Both verdicts are reachable from the cheap reads — `get_chapter(structure_only: true)` or `search_elements(detail: 'none')`.
+
 ## 2026-08-18
 
 ### Updated Skills
