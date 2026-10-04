@@ -173,7 +173,43 @@ Example: `Order Placed` (event) → `Fraud Detection Service` (automation)
 Each element has a name.
 Also write a short description of 2-3 sentences or bullet points.
 
-DO NOT WRITE TO ELEMENT DETAILS. Details are reserved for deep modeling. This skill is about exploration.
+DO NOT WRITE TO ELEMENT DETAILS. Details are reserved for deep modeling; this skill is about
+exploration. What belongs in each field is in Description vs. Details below.
+
+## Description vs. Details
+
+An element documents itself in two places, and they are not interchangeable.
+
+**The description is the card.** It describes the information flow in condensed form — what this
+step does, in the business's own words — and it is what people read while walking the model. Keep
+it short; this is where concrete examples and sample data earn their place. Markdown is supported
+(lists, links, images, code fences, Mermaid diagrams).
+
+**The details are the sidebar** (`Ctrl+D`, the *Documentation* tab). This is the long-form
+specification: database schema, configuration, API endpoints, rules — whatever the element needs
+and a card cannot hold. It has an auto-generated table of contents (built from `#`/`##`/`###`
+headings), the same extended Markdown as the description, and element references (`:::element`)
+that link to the element they name.
+
+They differ in scope, not only in length:
+
+| | Description | Details |
+|---|---|---|
+| Scope | The slice this placement sits in | The element, at every placement |
+| Shared | No — per placement | Yes — all similar elements (name + type + context) share one |
+| Written for | This step: concrete examples | The element: what is true everywhere |
+
+Two consequences follow:
+
+- A similar element in another slice may carry a **different description** — that is the right
+  place for a step-specific example. Put it in `details` instead and it shows at every placement.
+- `details` is shared state, so a blind write replaces documentation nobody has a second copy of.
+  Read it in full first, or append (see Amending a Chapter That Already Shipped).
+
+**In Modeling Mode the rule in Structure still holds: write the description, leave `details`
+alone.** Modeling storage or transport concerns as commands and events is what the anti-patterns
+warn against; specifying them *is* what `details` is for — the model stays in business language,
+the specification sits beside it.
 
 ## Command
 
