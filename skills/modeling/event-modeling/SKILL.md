@@ -372,14 +372,18 @@ read. Both are legitimate; be deliberate about which you are creating.
 | Means | We have not decided this yet | We decided: this is what happens when it goes wrong |
 | Written by | Modeling and Critic mode | `slice-scenarios`, as the **Then** of a failure or rejection scenario |
 | Content | A question, the options, and what blocks on it | A named outcome with its payload — `reason`, ids, outcome code |
-| Lifecycle | Resolved and closed; the description is rewritten to record the ruling | Permanent — it is part of the specified behavior |
+| Lifecycle | Resolved, then **retired** — the ruling moves into the slice's details | Permanent — it is part of the specified behavior |
 | Blocks the gate? | Yes, until resolved | No — its existence is what *passing* looks like |
 
 A failure-state Hot Spot is not an unresolved question and must not be counted as one when
 reporting completeness. Conversely, an open question dressed up with a payload looks decided when
-it is not. When you resolve an open question, rewrite its description to state the ruling and the
-rejected alternatives — do not delete it. The history is the point, and the next person to have
-the same idea needs to find out why it was rejected.
+it is not.
+
+**Resolving an open question retires the element.** A red card on a finished model reads as "still
+broken", which is not what a ruling looks like. Move the ruling and its rejected alternatives into
+the owning slice's `details.md` as a dated section (`### Ruled decisions`) and remove the element;
+a behavioural ruling also earns a Given/When/Then, which that section cannot replace. Only where
+the history lives changes. A failure/skip state is never retired this way.
 
 ## Reusing Elements Across Chapters (Sync)
 
