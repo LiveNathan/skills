@@ -86,19 +86,27 @@ Each slice is one of four types:
 
 ### Read Slice
 
+Also called a **State View slice**.
+
 Contains:
 
 Information → UI (optional)
+
+The read model is projected from **previously recorded events** — those events are its inputs, and
+placing them in the slice is how the model shows what it projects from.
 
 Rules:
 
 - one or more information elements in Information Flow lane (required)
 - UI element in User Role lane (typical, but optional — omit when the information is consumed downstream rather than displayed)
+- the source events the read model projects from **may** be placed in the slice's System Context lane
 - commands are NOT allowed
-- events are NOT allowed
+- **new** events are NOT allowed — a Read slice consumes events that already exist and never records a state change
 - automation is NOT allowed
 
 A Read Slice represents data read from the system, normally displayed to users on a screen. The **Information** is the required element; the **UI** is its usual companion.
+
+**Source events are inputs, not outputs.** The test is not "no event stickies" but *no state change*: a Read slice never emits an event. Showing the source events beside the read model documents the dependency; it is not a claim about wiring. On prooph board the arrow is derived from **slice order** — an event in a slice *before* the read reaches the Information in the following read slice, while an event placed in the *same* slice as its Information draws no arrow. Both placements are legal; only one draws.
 
 ---
 
@@ -672,7 +680,7 @@ If you assume → ask user question or create a Hotspot.
 In Critic Mode — and as step 8 of the Modeling Order — verify every item before declaring a model correct:
 
 - [ ] Lanes renamed: User Role → the actual actor, System Context → the system/bounded context; **Information Flow is never renamed**
-- [ ] Each slice is exactly one type (Read, Write, Automation, or Event Reaction) — no mixed element sets
+- [ ] Each slice is exactly one type (Read, Write, Automation, or Event Reaction). The one permitted overlap is a Read slice carrying the source events its read model projects from — and even then it contains no command and emits no new event
 - [ ] Element placement: commands and information in Information Flow; events in System Context; UI and automation in User Role
 - [ ] The process starts with a READ or AUTOMATION slice
 - [ ] Every command traces to a trigger (a preceding READ or AUTOMATION) and produces at least one event
