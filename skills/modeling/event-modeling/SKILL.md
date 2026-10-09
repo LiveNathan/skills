@@ -118,7 +118,9 @@ UI (optional) -> Command → Event
 
 Rules:
 
-- exactly one command in Information Flow lane
+- exactly one command in Information Flow lane — the board tools enforce this **per cell**, so a
+  `move_element` into a cell that already holds a command is rejected, and **swapping two slices'
+  contents needs a temporary holding slice** rather than two moves
 - one or more events in System Context lane
 - information is NOT allowed
 - automation is NOT allowed
@@ -178,11 +180,13 @@ Example: `Order Placed` (event) → `Fraud Detection Service` (automation)
 
 ## Structure
 
-Each element has a name.
-Also write a short description of 2-3 sentences or bullet points.
+Each element has a name — pass a bare `&`, not an entity: the tools escape names, so `&amp;` lands
+on the card literally.
 
-DO NOT WRITE TO ELEMENT DETAILS. Details are reserved for deep modeling; this skill is about
-exploration. What belongs in each field is in Description vs. Details below.
+Also write a short description of 2-3 sentences or bullet points. **Do not write to element
+`details` while exploring.** They are the long-form specification — where a storage or transport
+concern belongs instead of a command or an event — and where an amendment appends. Both cases are
+below in Description vs. Details and Amending a Chapter That Already Shipped.
 
 ## Description vs. Details
 
@@ -207,17 +211,13 @@ They differ in scope, not only in length:
 | Shared | No — per placement | Yes — all similar elements (name + type + context) share one |
 | Written for | This step: concrete examples | The element: what is true everywhere |
 
-Two consequences follow:
+One consequence follows: a similar element in another slice may carry a **different description** —
+that is where a step-specific example belongs. Put it in `details` instead and it shows at every
+placement.
 
-- A similar element in another slice may carry a **different description** — that is the right
-  place for a step-specific example. Put it in `details` instead and it shows at every placement.
-- `details` is shared state, so a blind write replaces documentation nobody has a second copy of.
-  Read it in full first, or append (see Amending a Chapter That Already Shipped).
-
-**In Modeling Mode the rule in Structure still holds: write the description, leave `details`
-alone.** Modeling storage or transport concerns as commands and events is what the anti-patterns
-warn against; specifying them *is* what `details` is for — the model stays in business language,
-the specification sits beside it.
+Rewriting a description is therefore cheap and rewriting `details` is not (see Amending a Chapter
+That Already Shipped): a correction moves *out* of the description and *into* `details`, never the
+other way, and never into a second description-shaped field.
 
 ## Command
 
@@ -708,22 +708,26 @@ before writing anything back — never compose board writes from the inline rend
 A full `get_chapter` is expensive: on a mature chapter it returns every slice's full
 Given/When/Then and can run to tens of thousands of tokens. Three cheap reads avoid that:
 
-- `get_chapter(structure_only: true)` strips lane and slice details, leaving the structure (lanes,
-  slices, element placements, ids, names). Use it whenever you need the shape of a chapter rather
-  than its prose.
-- `slice_ids` narrows the *details* to the slices you name: non-matching slices still come back
-  (lanes and slices are always whole, and an id that matches nothing does not suppress them) but
-  without their `details`, so a single-slice query on a large chapter stays small.
+- `get_chapter(structure_only: true)` strips **lane and slice details only** — every element's
+  `description` and `details` still come back, so on a chapter with a dozen elements it is not the
+  cheap "just the shape" read its name implies (55 KB for an eight-slice chapter, measured). For a
+  placement inventory, read the host project's local model files — its config declares whether that
+  mirror is live — or use `search_elements(detail: 'none')`.
+- `list_changelog_events(detail: 'none')` answers who-changed-what-when in a few hundred bytes;
+  `'summary'` over 40 events cost 33 KB in the same session, and `'full'` also drags old and new
+  values.
+- `slice_ids` narrows the *details* to the slices you name, so a single-slice query stays small —
+  non-matching slices still come back (lanes and slices are always whole, and an id that matches
+  nothing does not suppress them), just without their `details`.
 - `search_elements(detail:)` is the element-level equivalent — `'none'` (id, type, name, laneId,
   sliceId, chapterId), `'summary'` (adds context, index, chapterName), or `'full'` (the default,
   including description and details). Use `'none'` or `'summary'` for inventory and reference
   checks.
 
-Do not call a full `get_chapter` speculatively hoping for a cheap summary.
-
-The live board is always the source of truth. If your setup keeps a local export or snapshot of the
-board, treat it strictly as an offline fallback: it lags the live board, so refresh it at the moment
-you need it rather than trusting a committed copy.
+The live board is always the source of truth. Some setups also keep a local mirror of it; the host
+project's Event modeling config declares whether that mirror is live (streamed from the board) or a
+stale export, and that declaration decides how far to trust it. A live mirror is the cheapest read by
+an order of magnitude — read it before making any MCP read.
 
 ---
 
