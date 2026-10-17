@@ -296,6 +296,13 @@ UI elements represent screens, not interactions.
 
 UI interactions must be described in element details, not commands.
 
+What the card itself carries is **the action the actor takes, then a mockup of what they see** — an
+HTML block in the card, not a paragraph describing the screen. Consecutive UI cards of the same page
+differ by exactly what the slice between them changed (an empty table → one row → the same row with
+the field the next write set), so the delta between two cards is the story, and it is the fastest
+thing a reader can scan. Rules, entry points, landings and the reason behind a gesture belong in the
+slice's details, which can change without rewriting a card that renders at several placements.
+
 ---
 
 ## Automation
@@ -450,6 +457,13 @@ Valid flows:
 - AUTOMATION → WRITE
 - AUTOMATION → READ
 - WRITE → EVENT REACTION (an event triggers an automation in an Event Reaction slice)
+
+**`WRITE → READ` means the read that renders what that write wrote.** A write slice is followed
+immediately by the read slice whose read model folds its event: that adjacency is what draws the
+event into a read model that actually consumes it. A write whose next read belongs to a different
+page has no visible result — the operator makes a change, cannot see it, and the model cannot say
+where they landed. The result read is its own slice, even when it renders the same page as an
+earlier slice: two cards of one page, differing by exactly the change.
 
 Every command must be traceable to:
 
@@ -640,6 +654,7 @@ In Critic Mode — and as step 8 of the Modeling Order — verify every item bef
 - [ ] Commands are imperative business intent; events are past-tense business facts
 - [ ] No data-loading commands, UI-interaction events, or technical events (see Anti-Patterns)
 - [ ] Slice transitions match a Valid flow (see Flow & Causality)
+- [ ] Every write is followed immediately by the read slice that renders its result — not merely *a* read
 - [ ] Elements reused across chapters share the exact name, type, AND context of their source — same name + type + context = one synchronized element
 - [ ] Assumptions are surfaced as Hotspots or questions, not buried in descriptions
 
